@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Code commun backend + scanner : normalisation, versions, corrélation, criticité.
+       Aucune dépendance NuGet. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Vigie.Shared</RootNamespace>
+  </PropertyGroup>
+
+</Project>

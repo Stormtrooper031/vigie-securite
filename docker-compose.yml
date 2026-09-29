@@ -1,0 +1,155 @@
+# =====================================================================
+#  Vigie Sécurité - orchestration Docker
+#  Démarrage :  cp .env.example .env   puis   docker compose up -d --build
+#  Tableau de bord : http://localhost:3000   |  Courriels (Mailpit) : http://localhost:8025
+# =====================================================================
+name: vigie-securite
+
+services:
+
+  # ------------------------------------------------------------------
+  # Base de données
+  # ------------------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    container_name: vigie-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vigie
+      POSTGRES_USER: vigie
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Définir DB_PASSWORD dans .env}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vigie -d vigie"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [vigie-internal]
+    # Décommenter pour accéder à la BD depuis l'hôte (pgAdmin, DBeaver, psql...)
+    # ports:
+    #   - "127.0.0.1:5433:5432"
+
+  # ------------------------------------------------------------------
+  # Serveur SMTP de test (capture tous les courriels) - remplace MailHog
+  # En production : pointer SMTP_HOST vers votre relais SMTP et retirer ce service.
+  # ------------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: vigie-mailpit
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 5000
+      TZ: ${TZ:-America/Toronto}
+    ports:
+      - "127.0.0.1:8025:8025"   # interface web
+    networks: [vigie-internal, vigie-edge]
+
+  # ------------------------------------------------------------------
+  # API backend C# (.NET 10)
+  # ------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: vigie-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      TZ: ${TZ:-America/Toronto}
+      ConnectionStrings__Vigie: "Host=db;Port=5432;Database=vigie;Username=vigie;Password=${DB_PASSWORD};Timezone=UTC"
+      Security__InternalApiKey: ${INTERNAL_API_KEY:?Définir INTERNAL_API_KEY dans .env}
+      Scanner__BaseUrl: http://scanner:8080
+      Stack__File: /config/stack.txt
+      Stack__ImportOnStartup: ${STACK_IMPORT_ON_STARTUP:-true}
+      Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      Smtp__Host: ${SMTP_HOST:-mailpit}
+      Smtp__Port: ${SMTP_PORT:-1025}
+      Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-false}
+      Smtp__User: ${SMTP_USER:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__From: ${SMTP_FROM:-vigie-securite@localhost}
+      Notifications__Enabled: ${NOTIFY_ENABLED:-true}
+      Notifications__To: ${NOTIFY_TO:-equipe-securite@localhost}
+      Notifications__MinSeverity: ${NOTIFY_MIN_SEVERITY:-HIGH}
+      Notifications__ImmediateSeverity: ${NOTIFY_IMMEDIATE_SEVERITY:-CRITICAL}
+      Notifications__Frequency: ${NOTIFY_FREQUENCY:-daily}
+      Notifications__DailyAt: ${NOTIFY_DAILY_AT:-07:30}
+      Notifications__WeeklyDay: ${NOTIFY_WEEKLY_DAY:-Monday}
+      Notifications__IncludeBaseline: ${NOTIFY_INCLUDE_BASELINE:-false}
+      Notifications__DashboardUrl: ${DASHBOARD_URL:-http://localhost:3000}
+    volumes:
+      - ./config:/config:ro
+    ports:
+      - "127.0.0.1:8080:8080"   # API directe (optionnel, utile pour tester)
+    networks: [vigie-internal, vigie-edge]
+
+  # ------------------------------------------------------------------
+  # Service de surveillance C# (NVD, CISA KEV, MITRE, OSV, EPSS)
+  # ------------------------------------------------------------------
+  scanner:
+    build:
+      context: .
+      dockerfile: surveillance/Dockerfile
+    container_name: vigie-scanner
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      TZ: ${TZ:-America/Toronto}
+      ConnectionStrings__Vigie: "Host=db;Port=5432;Database=vigie;Username=vigie;Password=${DB_PASSWORD};Timezone=UTC"
+      Security__InternalApiKey: ${INTERNAL_API_KEY}
+      Backend__BaseUrl: http://backend:8080
+      Scan__IntervalMinutes: ${SCAN_INTERVAL_MINUTES:-360}
+      Scan__DailyAt: ${SCAN_DAILY_AT:-}
+      Scan__OnStartup: ${SCAN_ON_STARTUP:-true}
+      Scan__StartupDelaySeconds: ${SCAN_STARTUP_DELAY_SECONDS:-30}
+      Sources__Nvd__Enabled: ${SOURCE_NVD:-true}
+      Sources__Nvd__ApiKey: ${NVD_API_KEY:-}
+      Sources__Nvd__InitialLookbackDays: ${NVD_INITIAL_LOOKBACK_DAYS:-0}
+      Sources__Kev__Enabled: ${SOURCE_KEV:-true}
+      Sources__Mitre__Enabled: ${SOURCE_MITRE:-true}
+      Sources__Osv__Enabled: ${SOURCE_OSV:-true}
+      Sources__Epss__Enabled: ${SOURCE_EPSS:-true}
+      # Proxy sortant (réseau d'entreprise) : décommenter au besoin dans .env
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      NO_PROXY: backend,db,mailpit,localhost
+    networks: [vigie-internal, vigie-edge]
+
+  # ------------------------------------------------------------------
+  # Tableau de bord React/Vite (servi par nginx, /api -> backend)
+  # ------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+    container_name: vigie-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:80"
+    networks: [vigie-edge]
+
+networks:
+  # Réseau privé : la BD n'est jamais exposée ni joignable depuis l'extérieur
+  vigie-internal:
+    internal: true
+  # Réseau avec sortie : ports publiés + accès Internet du scanner
+  vigie-edge:
+    driver: bridge
+
+volumes:
+  db_data:
+    name: vigie_pg_data

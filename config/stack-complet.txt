@@ -1,0 +1,83 @@
+# =====================================================================
+#  Stack exportée de Vigie Sécurité le 2026-09-29 07:11
+#  51 technologie(s) active(s), 0 inactive(s) (en commentaire).
+#  Format :  [préfixe:]nom[@version]  [| option=valeur | ...]
+#  Une ligne [Solution] affecte les lignes suivantes à cette solution.
+#  Réimportable via la page « Ma stack » ou en remplaçant config/stack.txt.
+# =====================================================================
+
+# --- Runtimes ---
+runtime:PHP@8.3.29
+runtime:VB.NET
+
+# --- Frameworks ---
+framework:.NET Framework@4.8
+framework:ASP.NET Web Forms@4.7.0
+
+# --- Images Docker ---
+docker:postgres:16 | name=postgres:16 | keywords=alpine
+
+
+[Base de données]
+
+# --- Bases de données ---
+database:MariaDB@11.4.2 | cpe=cpe:2.3:a:mariadb:mariadb:*:*:*:*:*:*:*:*
+database:MsSQL | name=MsSQL
+database:PostgreSQL@18.6
+database:PostgreSQL Docker@16.15 | cpe=cpe:2.3:a:postgresql:postgresql:16.15:*:*:*:*:*:*:*
+
+
+[ClickStage]
+
+# --- Runtimes ---
+runtime:.NET@8.0
+
+# --- Frameworks ---
+framework:ASP.NET Core@8.0
+
+# --- Bibliothèques et paquets ---
+npm:@angular/animations@19.2.21 | product=angular_animations
+npm:@angular/cdk@19.2.19 | product=angular_cdk
+npm:@angular/common@19.2.21 | product=angular_common
+npm:@angular/compiler@19.2.21 | product=angular_compiler
+npm:@angular/core@19.2.21 | product=angular_core
+npm:@angular/forms@19.2.21 | product=angular_forms
+npm:@angular/material@19.2.19 | product=angular_material
+npm:@angular/platform-browser@19.2.21 | product=angular_platform_browser
+npm:@angular/platform-browser-dynamic@19.2.21 | product=angular_platform_browser_dynamic
+npm:@angular/platform-server@19.2.21 | product=angular_platform_server
+npm:@angular/router@19.2.21 | product=angular_router
+npm:@angular/ssr@19.2.25 | product=angular_ssr
+npm:@auth0/angular-jwt@5.2.0 | product=auth0_angular_jwt
+npm:@fortawesome/fontawesome-free@6.5.2 | product=fontawesome_free
+npm:angular-in-memory-web-api@0.19.0
+npm:bootstrap@5.3.3
+npm:chart.js@3.9.1
+npm:crypto-js@4.2.0
+npm:dompurify@3.2.4 | cpe=cpe:2.3:a:cure53:dompurify:3.2.4:*:*:*:*:*:*:*
+npm:exceljs@3.4.0
+npm:express@4.18.2
+npm:file-saver@2.0.5
+npm:jquery@3.7.1
+npm:jspdf@4.2.1 | cpe=cpe:2.3:a:parall:jspdf:4.2.1:*:*:*:*:*:*:*
+npm:jwt-decode@3.1.2
+npm:moment@2.30.1 | cpe=cpe:2.3:a:momentjs:moment:2.30.1:*:*:*:*:*:*:*
+npm:oidc-client@1.10.1
+npm:pdfmake@0.2.20
+npm:popper.js@1.16.1
+npm:primeng@19.1.4
+npm:rxjs@7.8.1
+npm:tinymce@8.2.2 | cpe=cpe:2.3:a:tiny:tinymce:8.2.2:*:*:*:*:*:*:*
+npm:typescript@5.6.3
+npm:web-animations-js@2.3.2
+npm:xlsx@0.18.5 | cpe=cpe:2.3:a:sheetjs:sheetjs:0.18.5:*:*:*:*:*:*:*
+npm:zone.js@0.15.1
+nuget:Microsoft.EntityFrameworkCore@8.0.21
+nuget:Microsoft.EntityFrameworkCore.SqlServer@8.0.21
+nuget:NLog@5.3.2
+
+
+[Guichet psychosociaux]
+
+# --- Applications ---
+app:WordPress@7.1.1

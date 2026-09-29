@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Service de surveillance autonome : planification + collecte NVD / CISA KEV / MITRE / OSV / EPSS.
+       SDK Web utilisé pour l'hébergement et 3 petites routes (/health, /status, /scan). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Vigie.Scanner</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="Npgsql" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\shared\Vigie.Shared\Vigie.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
