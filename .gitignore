@@ -3,3 +3,41 @@
 **/obj/
 **/node_modules/
 frontend/dist/
+
+
+# =========================
+# IA / Agents IA
+# =========================
+AGENTS.md
+CLAUDE.md
+.claude/
+.claudeignore
+.cursorrules
+.cursor/
+.aider*
+ aider.conf.yml
+.github/copilot*
+CODESPACES
+.devcontainer/
+.opencode/
+opencode.json
+.windsurf*
+.windsurfrules
+.codex/
+codex.md
+.augment/
+.augmentcode*
+.roo/
+.roorules
+.roomodes
+.cline/
+cline_rules*
+.reply/
+reply_config*
+.dual/
+.semantic/
+.new/
+.npmrc.bak
+.agents
+apm.lock.yaml
+apm.yml
