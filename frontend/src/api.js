@@ -38,6 +38,7 @@ export const api = {
   vulnerabilitiesNew: (q) => request(`/api/vulnerabilities/new${qs(q)}`),
   vulnerability: (id) => request(`/api/vulnerabilities/${id}`),
   exportUrl: (q) => `${BASE}/api/vulnerabilities/export${qs(q)}`,
+  resetVulnerabilities: () => request('/api/vulnerabilities/reset', { method: 'POST' }),
 
   technologies: () => request('/api/technologies'),
   technologyExportUrl: () => `${BASE}/api/technologies/export`,

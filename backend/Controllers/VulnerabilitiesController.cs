@@ -31,6 +31,13 @@ public class VulnerabilitiesController(VulnerabilityService service) : Controlle
     public async Task<ActionResult<VulnerabilityDetail>> Get(int id) =>
         await service.GetAsync(id) is { } d ? d : NotFound();
 
+    /// <summary>
+    /// Vide les vulnérabilités, corrélations et alertes (donc « Mises à jour à faire » aussi), et remet les
+    /// technologies à « jamais scannée ». Ne touche pas à la stack ni à l'historique des courriels. Irréversible.
+    /// </summary>
+    [HttpPost("reset")]
+    public async Task<VulnerabilityResetResult> Reset() => await service.ResetAsync();
+
     /// <summary>Export CSV (séparateur ;) avec les mêmes filtres que la liste.</summary>
     [HttpGet("export")]
     public async Task<FileContentResult> Export([FromQuery] VulnerabilityQuery query)

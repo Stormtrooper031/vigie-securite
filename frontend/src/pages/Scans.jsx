@@ -7,6 +7,7 @@ export default function Scans() {
   const status = useApi(() => api.scannerStatus(), [])
   const [open, setOpen] = useState(null)
   const [msg, setMsg] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   // Rafraîchissement automatique pendant un scan
   useEffect(() => {
@@ -22,6 +23,22 @@ export default function Scans() {
     catch (e) { setMsg(e.message) }
   }
 
+  const resetVulns = async () => {
+    if (!window.confirm(
+      'Vider les vulnérabilités, corrélations et alertes (donc « Mises à jour à faire ») ?\n\n' +
+      'La stack (« Ma stack ») et l\'historique des courriels sont conservés. ' +
+      'Le prochain scan refera un inventaire complet. Cette action est irréversible.'
+    )) return
+    setMsg(null)
+    setBusy(true)
+    try {
+      const r = await api.resetVulnerabilities()
+      setMsg(`${r.vulnerabilitiesDeleted} vulnérabilité(s) et ${r.alertsDeleted} alerte(s) supprimées. Lancez un scan pour reconstituer l'inventaire.`)
+      reload()
+    } catch (e) { setMsg(e.message) }
+    finally { setBusy(false) }
+  }
+
   const s = status.data
   return (
     <>
@@ -33,6 +50,7 @@ export default function Scans() {
         <div className="actions">
           <button className="btn" onClick={() => { reload(); status.reload() }}>Actualiser</button>
           <button className="btn btn-primary" onClick={trigger}>Lancer un scan</button>
+          <button className="btn btn-danger" disabled={busy} onClick={resetVulns}>Réinitialiser les vulnérabilités</button>
         </div>
       </header>
       {msg && <div className="info">{msg}</div>}
