@@ -23,7 +23,7 @@ public sealed class AlertService(Db db, NotificationService notifications, IOpti
     public const string AlertSelect = """
         SELECT a.*, v.external_id, v.cve_id, v.title, v.cvss_score, v.epss_score, v.in_kev, v.kev_due_date,
                COALESCE(vt.fixed_version, v.fixed_versions) AS fixed_versions, v.published_at, t.name AS technology_name, t.version AS technology_version,
-               vt.confidence
+               t.solutions AS technology_solutions, vt.confidence
         FROM alerts a
         JOIN vulnerabilities v ON v.id = a.vulnerability_id
         JOIN technologies t ON t.id = a.technology_id

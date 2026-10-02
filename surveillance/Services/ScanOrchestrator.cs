@@ -105,6 +105,14 @@ public sealed class ScanOrchestrator(
                 catch (Exception ex) { log.Error("EPSS indisponible", ex); }
             }
 
+            // Scan manuel : envoi du courriel de notification à la fin
+            if (request.Trigger == "manual")
+            {
+                status.CurrentStep = "Envoi du courriel";
+                try { await backend.NotifyAsync(ct); log.Info("Courriel de notification demandé (scan manuel)"); }
+                catch (Exception ex) when (ex is not OperationCanceledException) { log.Error("Envoi du courriel en échec", ex); }
+            }
+
             if (log.Errors > 0) finalStatus = "partial";
             log.Info($"Scan terminé : {stats.VulnsFetched} failles lues, {stats.VulnsNew} nouvelles en base, {stats.LinksNew} nouvelles corrélations, {stats.KevUpdates} escalades KEV");
         }

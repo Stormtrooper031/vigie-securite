@@ -38,6 +38,15 @@ public sealed class BackendClient(HttpClient http, IOptions<SecurityOptions> sec
         return created;
     }
 
+    /// <summary>Demande l'envoi du courriel de résumé des alertes en attente.</summary>
+    public async Task NotifyAsync(CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/alerts/notify");
+        req.Headers.Add("X-Api-Key", security.Value.InternalApiKey);
+        using var resp = await http.SendAsync(req, ct);
+        resp.EnsureSuccessStatusCode();
+    }
+
     private sealed class IngestResult
     {
         public int Created { get; set; }

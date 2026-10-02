@@ -111,7 +111,11 @@ public static class EmailTemplateBuilder
                 .Select(g => $"{E(g.Key)} ({g.Count()})")));
             sb.Append("</div>");
 
-            AppendAlertTable(sb, alerts);
+            foreach (var (solution, group) in BySolution(alerts))
+            {
+                sb.Append($"""<div style="margin:20px 0 8px 0;font-size:16px;font-weight:600;border-bottom:2px solid #0f172a;padding-bottom:4px">Solution : {E(solution)} ({group.Count})</div>""");
+                AppendAlertTable(sb, group);
+            }
         }
 
         if (baseline.Count > 0)
@@ -125,11 +129,11 @@ public static class EmailTemplateBuilder
                 sb.Append($"<li>{E(b.TechnologyName)} {E(b.TechnologyVersion)} : {b.Total} faille(s) dont {b.Critical} critique(s), {b.High} élevée(s)</li>");
             sb.Append("</ul></div>");
 
-            // Détail complet de chaque faille, regroupé par technologie
-            foreach (var g in baselineAlerts.GroupBy(a => $"{a.TechnologyName} {a.TechnologyVersion}".Trim()))
+            // Détail complet de chaque faille, regroupé par solution
+            foreach (var (solution, group) in BySolution(baselineAlerts))
             {
-                sb.Append($"""<div style="margin:20px 0 8px 0;font-size:15px;font-weight:600">Inventaire initial — {E(g.Key)} ({g.Count()})</div>""");
-                AppendAlertTable(sb, g.ToList());
+                sb.Append($"""<div style="margin:20px 0 8px 0;font-size:16px;font-weight:600;border-bottom:2px solid #64748b;padding-bottom:4px">Inventaire initial — solution : {E(solution)} ({group.Count})</div>""");
+                AppendAlertTable(sb, group);
             }
         }
 
@@ -150,22 +154,41 @@ public static class EmailTemplateBuilder
         var sb = new StringBuilder();
         sb.AppendLine($"Vigie sécurité — {(kind == "immediate" ? "ALERTE IMMÉDIATE" : "résumé")} — {DateTime.Now:yyyy-MM-dd HH:mm}");
         sb.AppendLine();
-        foreach (var a in alerts) AppendAlertText(sb, a);
+        foreach (var (solution, group) in BySolution(alerts))
+        {
+            sb.AppendLine($"== Solution : {solution} ({group.Count}) ==");
+            foreach (var a in group) AppendAlertText(sb, a);
+        }
         foreach (var b in baseline)
             sb.AppendLine($"Inventaire initial : {b.TechnologyName} {b.TechnologyVersion} : {b.Total} faille(s) ({b.Critical} critiques)");
         if (baselineAlerts is { Count: > 0 })
         {
             sb.AppendLine();
-            foreach (var g in baselineAlerts.GroupBy(a => $"{a.TechnologyName} {a.TechnologyVersion}".Trim()))
+            foreach (var (solution, group) in BySolution(baselineAlerts))
             {
-                sb.AppendLine($"== Inventaire initial — {g.Key} ({g.Count()}) ==");
-                foreach (var a in g) AppendAlertText(sb, a);
+                sb.AppendLine($"== Inventaire initial — solution : {solution} ({group.Count}) ==");
+                foreach (var a in group) AppendAlertText(sb, a);
             }
         }
         sb.AppendLine();
         sb.AppendLine($"Tableau de bord : {dashboardUrl}");
         return sb.ToString();
     }
+
+    private const string NoSolution = "Sans solution";
+
+    /// <summary>
+    /// Regroupe les alertes par solution (ordre alphabétique, « Sans solution » à la fin). Une technologie partagée
+    /// entre plusieurs solutions apparaît sous chacune d'elles ; à l'intérieur d'une solution, tri par technologie puis risque.
+    /// </summary>
+    private static List<(string Solution, List<Alert> Alerts)> BySolution(IEnumerable<Alert> alerts) =>
+        alerts
+            .SelectMany(a => a.TechnologySolutions is { Length: > 0 } ? a.TechnologySolutions.Select(s => (Solution: s, Alert: a)) : [(NoSolution, a)])
+            .GroupBy(x => x.Solution, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key == NoSolution ? 1 : 0).ThenBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase)
+            .Select(g => (g.Key, g.Select(x => x.Alert)
+                .OrderBy(a => a.TechnologyName).ThenBy(a => a.TechnologyVersion).ThenByDescending(a => a.RiskScore).ToList()))
+            .ToList();
 
     private static void AppendAlertText(StringBuilder sb, Alert a)
     {

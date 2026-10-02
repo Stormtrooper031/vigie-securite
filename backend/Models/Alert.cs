@@ -30,6 +30,7 @@ public class Alert
     public DateTime? PublishedAt { get; set; }
     public string? TechnologyName { get; set; }
     public string? TechnologyVersion { get; set; }
+    public string[] TechnologySolutions { get; set; } = [];
     public string? Confidence { get; set; }
 }
 
