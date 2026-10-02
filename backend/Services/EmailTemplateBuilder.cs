@@ -39,8 +39,45 @@ public static class EmailTemplateBuilder
         return $"{prefix}Vigie sécurité : {string.Join(", ", parts)}";
     }
 
-    public static string Html(string kind, IReadOnlyList<Alert> alerts, IReadOnlyList<BaselineSummaryRow> baseline, string dashboardUrl)
+    private static void AppendAlertTable(StringBuilder sb, IReadOnlyList<Alert> alerts)
     {
+        sb.Append("""
+            <table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px">
+            <tr style="background:#f8fafc;text-align:left">
+              <th style="border-bottom:2px solid #e2e8f0">Criticité</th>
+              <th style="border-bottom:2px solid #e2e8f0">Faille</th>
+              <th style="border-bottom:2px solid #e2e8f0">Technologie</th>
+              <th style="border-bottom:2px solid #e2e8f0">CVSS / EPSS</th>
+              <th style="border-bottom:2px solid #e2e8f0">Action recommandée</th>
+            </tr>
+            """);
+        foreach (var a in alerts)
+        {
+            var id = a.CveId ?? a.ExternalId ?? "";
+            var url = a.CveId is not null ? $"https://nvd.nist.gov/vuln/detail/{a.CveId}" : $"https://osv.dev/vulnerability/{a.ExternalId}";
+            var color = Colors.GetValueOrDefault(a.Severity, "#475569");
+            var kevBadge = a.InKev ? $"""<br><span style="background:#7f1d1d;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px">KEV{(a.KevDueDate is { } d ? $" · échéance {d:yyyy-MM-dd}" : "")}</span>""" : "";
+            var action = !string.IsNullOrEmpty(a.FixedVersions)
+                ? $"Mettre à jour {E(a.TechnologyName)} vers <b>{E(a.FixedVersions)}</b> ou plus"
+                : "Consulter le bulletin du fournisseur (aucune version corrigée publiée)";
+            var probable = a.Confidence == MatchConfidence.Probable ? "<br><i style=\"color:#64748b\">corrélation probable : vérifier la version</i>" : "";
+            sb.Append($"""
+                <tr style="vertical-align:top">
+                  <td style="border-bottom:1px solid #e2e8f0"><span style="background:{color};color:#fff;border-radius:4px;padding:2px 8px;font-weight:600">{Severity.Label(a.Severity)}</span><br><span style="color:#64748b">risque {a.RiskScore}/100</span></td>
+                  <td style="border-bottom:1px solid #e2e8f0"><a href="{url}" style="color:#1d4ed8;font-weight:600">{E(id)}</a>{kevBadge}<br><span style="color:#334155">{E(a.Title)}</span></td>
+                  <td style="border-bottom:1px solid #e2e8f0">{E(a.TechnologyName)} <b>{E(a.TechnologyVersion)}</b>{probable}</td>
+                  <td style="border-bottom:1px solid #e2e8f0">{a.CvssScore?.ToString("0.0") ?? "—"} / {(a.EpssScore is { } e ? $"{e * 100:0.#} %" : "—")}</td>
+                  <td style="border-bottom:1px solid #e2e8f0">{action}</td>
+                </tr>
+                """);
+        }
+        sb.Append("</table>");
+    }
+
+    public static string Html(string kind, IReadOnlyList<Alert> alerts, IReadOnlyList<BaselineSummaryRow> baseline, string dashboardUrl,
+        IReadOnlyList<Alert>? baselineAlerts = null)
+    {
+        baselineAlerts ??= [];
         var sb = new StringBuilder();
         sb.Append("""
             <!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"></head>
@@ -74,49 +111,26 @@ public static class EmailTemplateBuilder
                 .Select(g => $"{E(g.Key)} ({g.Count()})")));
             sb.Append("</div>");
 
-            sb.Append("""
-                <table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px">
-                <tr style="background:#f8fafc;text-align:left">
-                  <th style="border-bottom:2px solid #e2e8f0">Criticité</th>
-                  <th style="border-bottom:2px solid #e2e8f0">Faille</th>
-                  <th style="border-bottom:2px solid #e2e8f0">Technologie</th>
-                  <th style="border-bottom:2px solid #e2e8f0">CVSS / EPSS</th>
-                  <th style="border-bottom:2px solid #e2e8f0">Action recommandée</th>
-                </tr>
-                """);
-            foreach (var a in alerts)
-            {
-                var id = a.CveId ?? a.ExternalId ?? "";
-                var url = a.CveId is not null ? $"https://nvd.nist.gov/vuln/detail/{a.CveId}" : $"https://osv.dev/vulnerability/{a.ExternalId}";
-                var color = Colors.GetValueOrDefault(a.Severity, "#475569");
-                var kevBadge = a.InKev ? $"""<br><span style="background:#7f1d1d;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px">KEV{(a.KevDueDate is { } d ? $" · échéance {d:yyyy-MM-dd}" : "")}</span>""" : "";
-                var action = !string.IsNullOrEmpty(a.FixedVersions)
-                    ? $"Mettre à jour {E(a.TechnologyName)} vers <b>{E(a.FixedVersions)}</b> ou plus"
-                    : "Consulter le bulletin du fournisseur (aucune version corrigée publiée)";
-                var probable = a.Confidence == MatchConfidence.Probable ? "<br><i style=\"color:#64748b\">corrélation probable : vérifier la version</i>" : "";
-                sb.Append($"""
-                    <tr style="vertical-align:top">
-                      <td style="border-bottom:1px solid #e2e8f0"><span style="background:{color};color:#fff;border-radius:4px;padding:2px 8px;font-weight:600">{Severity.Label(a.Severity)}</span><br><span style="color:#64748b">risque {a.RiskScore}/100</span></td>
-                      <td style="border-bottom:1px solid #e2e8f0"><a href="{url}" style="color:#1d4ed8;font-weight:600">{E(id)}</a>{kevBadge}<br><span style="color:#334155">{E(Trunc(a.Title, 160))}</span></td>
-                      <td style="border-bottom:1px solid #e2e8f0">{E(a.TechnologyName)} <b>{E(a.TechnologyVersion)}</b>{probable}</td>
-                      <td style="border-bottom:1px solid #e2e8f0">{a.CvssScore?.ToString("0.0") ?? "—"} / {(a.EpssScore is { } e ? $"{e * 100:0.#} %" : "—")}</td>
-                      <td style="border-bottom:1px solid #e2e8f0">{action}</td>
-                    </tr>
-                    """);
-            }
-            sb.Append("</table>");
+            AppendAlertTable(sb, alerts);
         }
 
         if (baseline.Count > 0)
         {
             sb.Append("""
                 <div style="margin-top:20px;padding:12px 14px;background:#f8fafc;border-left:4px solid #64748b;font-size:13px">
-                <b>Inventaire initial</b> — failles déjà publiées avant la mise sous surveillance de ces technologies
-                (non détaillées ici, consultez le tableau de bord) :<ul style="margin:6px 0 0 0;padding-left:18px">
+                <b>Inventaire initial</b> — failles déjà publiées avant la mise sous surveillance de ces technologies :
+                <ul style="margin:6px 0 0 0;padding-left:18px">
                 """);
             foreach (var b in baseline)
                 sb.Append($"<li>{E(b.TechnologyName)} {E(b.TechnologyVersion)} : {b.Total} faille(s) dont {b.Critical} critique(s), {b.High} élevée(s)</li>");
             sb.Append("</ul></div>");
+
+            // Détail complet de chaque faille, regroupé par technologie
+            foreach (var g in baselineAlerts.GroupBy(a => $"{a.TechnologyName} {a.TechnologyVersion}".Trim()))
+            {
+                sb.Append($"""<div style="margin:20px 0 8px 0;font-size:15px;font-weight:600">Inventaire initial — {E(g.Key)} ({g.Count()})</div>""");
+                AppendAlertTable(sb, g.ToList());
+            }
         }
 
         sb.Append($"""
@@ -130,25 +144,35 @@ public static class EmailTemplateBuilder
         return sb.ToString();
     }
 
-    public static string Text(string kind, IReadOnlyList<Alert> alerts, IReadOnlyList<BaselineSummaryRow> baseline, string dashboardUrl)
+    public static string Text(string kind, IReadOnlyList<Alert> alerts, IReadOnlyList<BaselineSummaryRow> baseline, string dashboardUrl,
+        IReadOnlyList<Alert>? baselineAlerts = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Vigie sécurité — {(kind == "immediate" ? "ALERTE IMMÉDIATE" : "résumé")} — {DateTime.Now:yyyy-MM-dd HH:mm}");
         sb.AppendLine();
-        foreach (var a in alerts)
-        {
-            sb.AppendLine($"[{Severity.Label(a.Severity).ToUpperInvariant()}] {a.CveId ?? a.ExternalId} — {a.TechnologyName} {a.TechnologyVersion}{(a.InKev ? " — EXPLOITÉE (KEV)" : "")}");
-            sb.AppendLine($"   {Trunc(a.Title, 160)}");
-            sb.AppendLine($"   CVSS {a.CvssScore?.ToString("0.0") ?? "?"} ; risque {a.RiskScore}/100{(string.IsNullOrEmpty(a.FixedVersions) ? "" : $" ; corrigée en {a.FixedVersions}")}");
-            sb.AppendLine($"   https://nvd.nist.gov/vuln/detail/{a.CveId ?? a.ExternalId}");
-        }
+        foreach (var a in alerts) AppendAlertText(sb, a);
         foreach (var b in baseline)
             sb.AppendLine($"Inventaire initial : {b.TechnologyName} {b.TechnologyVersion} : {b.Total} faille(s) ({b.Critical} critiques)");
+        if (baselineAlerts is { Count: > 0 })
+        {
+            sb.AppendLine();
+            foreach (var g in baselineAlerts.GroupBy(a => $"{a.TechnologyName} {a.TechnologyVersion}".Trim()))
+            {
+                sb.AppendLine($"== Inventaire initial — {g.Key} ({g.Count()}) ==");
+                foreach (var a in g) AppendAlertText(sb, a);
+            }
+        }
         sb.AppendLine();
         sb.AppendLine($"Tableau de bord : {dashboardUrl}");
         return sb.ToString();
     }
 
-    private static string E(string? s) => WebUtility.HtmlEncode(s ?? "");
-    private static string Trunc(string? s, int n) => s is null ? "" : s.Length <= n ? s : s[..n] + "…";
-}
+    private static void AppendAlertText(StringBuilder sb, Alert a)
+    {
+        sb.AppendLine($"[{Severity.Label(a.Severity).ToUpperInvariant()}] {a.CveId ?? a.ExternalId} — {a.TechnologyName} {a.TechnologyVersion}{(a.InKev ? " — EXPLOITÉE (KEV)" : "")}");
+        sb.AppendLine($"   {a.Title}");
+        sb.AppendLine($"   CVSS {a.CvssScore?.ToString("0.0") ?? "?"} ; risque {a.RiskScore}/100{(string.IsNullOrEmpty(a.FixedVersions) ? "" : $" ; corrigée en {a.FixedVersions}")}");
+        sb.AppendLine($"   https://nvd.nist.gov/vuln/detail/{a.CveId ?? a.ExternalId}");
+    }
+
+    private static string E(string? s) => WebUtility.HtmlEncode(s ?? "");}

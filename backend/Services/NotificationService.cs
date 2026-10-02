@@ -28,10 +28,18 @@ public sealed class NotificationService(Db db, EmailSender sender, IOptionsMonit
             await using var cn = await db.OpenAsync(ct);
             var alerts = (await cn.QueryAsync<Alert>(AlertService.AlertSelect + """
                  WHERE a.notified_at IS NULL AND a.status = 'new' AND a.severity = ANY(@sevs)
-                   AND (NOT a.is_baseline OR @inclBaseline)
+                   AND (NOT a.is_baseline OR (@inclBaseline AND NOT @detailBaseline))
                  ORDER BY a.risk_score DESC, a.created_at DESC
                  LIMIT 200
-                """, new { sevs, inclBaseline = o.IncludeBaseline })).ToList();
+                """, new { sevs, inclBaseline = o.IncludeBaseline, detailBaseline = includeBaselineSummary })).ToList();
+
+            // Inventaire initial : toutes les failles, détaillées une à une (aucune limite, toutes criticités)
+            var baselineAlerts = includeBaselineSummary
+                ? (await cn.QueryAsync<Alert>(AlertService.AlertSelect + """
+                     WHERE a.notified_at IS NULL AND a.is_baseline
+                     ORDER BY t.name, t.version, a.risk_score DESC, a.created_at DESC
+                    """)).ToList()
+                : [];
 
             var baseline = includeBaselineSummary
                 ? (await cn.QueryAsync<BaselineSummaryRow>("""
@@ -46,8 +54,8 @@ public sealed class NotificationService(Db db, EmailSender sender, IOptionsMonit
             if (alerts.Count == 0 && baseline.Count == 0) return null;
 
             var subject = EmailTemplateBuilder.Subject(kind, alerts, baseline.Sum(b => b.Total));
-            var html = EmailTemplateBuilder.Html(kind, alerts, baseline, o.DashboardUrl.TrimEnd('/'));
-            var text = EmailTemplateBuilder.Text(kind, alerts, baseline, o.DashboardUrl.TrimEnd('/'));
+            var html = EmailTemplateBuilder.Html(kind, alerts, baseline, o.DashboardUrl.TrimEnd('/'), baselineAlerts);
+            var text = EmailTemplateBuilder.Text(kind, alerts, baseline, o.DashboardUrl.TrimEnd('/'), baselineAlerts);
             var recipients = string.Join(",", o.Recipients);
 
             var id = await cn.ExecuteScalarAsync<int>("""
