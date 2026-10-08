@@ -71,6 +71,9 @@ services:
       Stack__File: /config/stack.txt
       Stack__ImportOnStartup: ${STACK_IMPORT_ON_STARTUP:-true}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      AzureDevOps__Organization: ${AZDO_ORGANIZATION:-}
+      AzureDevOps__Projects: ${AZDO_PROJECTS:-}
+      AzureDevOps__Pat: ${AZDO_PAT:-}
       Smtp__Host: ${SMTP_HOST:-mailpit}
       Smtp__Port: ${SMTP_PORT:-1025}
       Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-false}

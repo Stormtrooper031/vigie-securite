@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { api, fmtDateTime, useApi } from '../api'
 import { ErrorBox, Loading, SeverityBadge } from '../components/ui'
+import AzureDevOpsImport from '../components/AzureDevOpsImport'
 
 const EMPTY = { name: '', type: 'other', version: '', vendor: '', product: '', ecosystem: '', packageName: '', cpe: '', keywords: '', solutions: '', notes: '', isActive: true }
 const NO_SOLUTION = 'Sans solution'
@@ -54,6 +55,7 @@ export default function Technologies() {
   const [form, setForm] = useState(null) // null = fermé ; {id?, ...}
   const [importText, setImportText] = useState('')
   const [preview, setPreview] = useState(null)
+  const [azdo, setAzdo] = useState(false)
   const [msg, setMsg] = useState(null)
   const [busy, setBusy] = useState(false)
   const [grouped, setGrouped] = useState(() => store.get('stack.grouped', true))
@@ -130,11 +132,14 @@ export default function Technologies() {
         </div>
         <div className="actions">
           <a className="btn" href={api.technologyExportUrl()} title="Télécharger la stack au format config/stack.txt (réimportable)">Exporter</a>
+          <button className="btn" onClick={() => setAzdo(!azdo)}>Depuis Azure DevOps</button>
           <button className="btn" onClick={() => { setPreview(null); setImportText(importText || IMPORT_EXAMPLE) }}>Importer une liste</button>
           <button className="btn btn-primary" onClick={() => setForm({ ...EMPTY })}>Ajouter</button>
         </div>
       </header>
       {msg && <div className="info">{msg}</div>}
+
+      {azdo && <AzureDevOpsImport onClose={() => setAzdo(false)} onResult={(text) => { setPreview(null); setImportText(text) }} />}
 
       {importText !== '' && (
         <section className="card">

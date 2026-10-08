@@ -1,6 +1,6 @@
-# =====================================================================
-#  Stack exportée de Vigie Sécurité le 2026-09-29 07:11
-#  51 technologie(s) active(s), 0 inactive(s) (en commentaire).
+﻿# =====================================================================
+#  Stack exportée de Vigie Sécurité le 2026-10-04 08:05
+#  113 technologie(s) active(s), 0 inactive(s) (en commentaire).
 #  Format :  [préfixe:]nom[@version]  [| option=valeur | ...]
 #  Une ligne [Solution] affecte les lignes suivantes à cette solution.
 #  Réimportable via la page « Ma stack » ou en remplaçant config/stack.txt.
@@ -9,10 +9,6 @@
 # --- Runtimes ---
 runtime:PHP@8.3.29
 runtime:VB.NET
-
-# --- Frameworks ---
-framework:.NET Framework@4.8
-framework:ASP.NET Web Forms@4.7.0
 
 # --- Images Docker ---
 docker:postgres:16 | name=postgres:16 | keywords=alpine
@@ -77,7 +73,111 @@ nuget:Microsoft.EntityFrameworkCore.SqlServer@8.0.21
 nuget:NLog@5.3.2
 
 
+[CMDP]
+
+# --- Frameworks ---
+framework:.NET Framework@4.8
+
+# --- Bibliothèques et paquets ---
+lib:chartjs-plugin-datalabels
+lib:clipboard.js
+lib:datatables.net
+lib:gmaps.js
+lib:google-code-prettify
+lib:icheck
+lib:jquery.cookie
+lib:modernizr
+lib:popper.js
+lib:scrollup
+lib:slidereveal
+lib:sweetalert
+lib:tablesorter
+npm:bootstrap@5.3.2
+npm:chart.js@2.9.4
+npm:tinymce@6.7
+nuget:AjaxControlToolkit@20.1
+nuget:BouncyCastle.Cryptography
+nuget:ClosedXML@0.96
+nuget:DocumentFormat.OpenXml@2.20
+nuget:ExcelNumberFormat
+nuget:FileCache@3.3
+nuget:Google.Protobuf
+nuget:HashDepot
+nuget:K4os.Compression.LZ4
+nuget:Microsoft.AspNet.WebApi.Client@5.2.9
+nuget:Newtonsoft.Json@13.0.3
+nuget:Spire.Doc@11.12
+nuget:SSH.NET@2020.0.2
+nuget:System.DirectoryServices.AccountManagement
+nuget:System.Runtime.Caching
+nuget:System.Text.Json@8.0.5
+nuget:Ubiety.Logging.Core
+
+
+[GDH]
+
+# --- Frameworks ---
+framework:.NET Framework@4.8
+framework:ASP.NET Web Forms
+
+# --- Bibliothèques et paquets ---
+lib:clipboard.js
+lib:google-code-prettify
+lib:icheck
+lib:jquery-validation
+lib:jquery.cookie
+lib:modernizr
+lib:multiselect
+lib:popper.js
+lib:respond.js
+lib:scrollup
+lib:slidebars
+lib:slidereveal
+lib:sumoselect
+lib:sweetalert
+lib:table2excel
+lib:tablesorter
+npm:bootstrap@4.6.0
+npm:jquery@3.6.0
+npm:jquery-ui@1.14
+npm:tinymce@7.4.1
+nuget:AjaxControlToolkit@20.1
+nuget:ClosedXML@0.97
+nuget:Ical.Net@4.2.0
+nuget:Newtonsoft.Json@13.0.3
+nuget:Npgsql@6.0.11
+nuget:Npgsql.Json.NET@6.0.11
+nuget:OpenHtmlToPdf@1.12
+nuget:Select.HtmlToPdf@22.2
+
+
 [Guichet psychosociaux]
 
 # --- Applications ---
 app:WordPress@7.1.1
+
+
+[Vigie Sécurité]
+
+# --- Serveurs web ---
+web:nginx@1.27
+
+# --- Runtimes ---
+runtime:.NET@10.0
+
+# --- Frameworks ---
+framework:ASP.NET Core@10.0
+
+# --- Bases de données ---
+database:PostgreSQL@17
+
+# --- Bibliothèques et paquets ---
+npm:@vitejs/plugin-react@4.7.0
+npm:react@19.3.0
+npm:react-dom@19.3.0
+npm:react-router-dom@7.18.4
+npm:recharts@2.15.4
+npm:vite@6.4.3
+nuget:Dapper@2.1.66
+nuget:Microsoft.AspNetCore.OpenApi@10.0.0
+nuget:Npgsql@9.0.3

@@ -15,6 +15,7 @@ builder.Services.Configure<NotificationOptions>(builder.Configuration.GetSection
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection("Security"));
 builder.Services.Configure<StackOptions>(builder.Configuration.GetSection("Stack"));
 builder.Services.Configure<ScannerOptions>(builder.Configuration.GetSection("Scanner"));
+builder.Services.Configure<AzureDevOpsOptions>(builder.Configuration.GetSection("AzureDevOps"));
 
 // ---- Services ----
 builder.Services.AddSingleton<Db>();
@@ -30,6 +31,8 @@ builder.Services.AddHttpClient<ScannerClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["Scanner:BaseUrl"] ?? "http://scanner:8080");
     c.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient<AzureDevOpsClient>();
+builder.Services.AddScoped<AzureDevOpsStackService>();
 builder.Services.AddHostedService<StackFileImporter>();
 builder.Services.AddHostedService<NotificationScheduler>();
 

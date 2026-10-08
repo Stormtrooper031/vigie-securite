@@ -52,6 +52,9 @@ export const api = {
   rescanTechnology: (id) => request(`/api/technologies/${id}/rescan`, { method: 'POST' }),
   recorrelate: (id) => request(`/api/technologies/${id}/recorrelate`, { method: 'POST' }),
 
+  azdoRepositories: () => request('/api/azure-devops/repositories'),
+  azdoScan: (targets) => request('/api/azure-devops/scan', { method: 'POST', body: { targets } }),
+
   alerts: (q) => request(`/api/alerts${qs(q)}`),
   setAlertStatus: (ids, status, comment) =>
     request('/api/alerts/status', { method: 'PATCH', body: { ids, status, comment } }),
